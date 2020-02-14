@@ -1,0 +1,4 @@
+theme: jekyll-theme-architect
+title: Amazon Price Checker
+description: Create a watch list of amazon items to have atomically price checked to see if they are are at or below your desired price.
+show_downloads: true

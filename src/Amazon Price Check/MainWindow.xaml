@@ -1,0 +1,677 @@
+﻿<Window x:Class="Amazon_Price_Checker.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:wpf="clr-namespace:CefSharp.Wpf;assembly=CefSharp.Wpf"
+        xmlns:properties="clr-namespace:Amazon_Price_Checker.Properties"
+        xmlns:tb="http://www.hardcodet.net/taskbar"
+        xmlns:cef="clr-namespace:CefSharp;assembly=CefSharp.Core"
+        xmlns:behaviors="clr-namespace:Amazon_Price_Checker.Behaviors"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
+        xmlns:TrayCommands="clr-namespace:Amazon_Price_Checker.NotificationTray.TaskIconCommands"
+        xmlns:i="clr-namespace:System.Windows.Interactivity;assembly=System.Windows.Interactivity" 
+        mc:Ignorable="d"
+        StateChanged="Window_StateChanged"
+        Closing="AmazonPriceChecker_Closing"
+        Title="Amazon Price Checker" Height="800" Width="650" MinWidth="650" MinHeight="700" Background="#E1E2E2">
+
+    <Window.Resources>
+        <Image x:Key="PriceWatch_img" Source="/Images/BrowserIcons/price_watch.png" Height="20" Width="20"/>
+        <Image x:Key="WatchingItem_img" Source="/Images/BrowserIcons/watching_item.png" Height="20" Width="20"/>
+        <SolidColorBrush x:Key="AccentColor" Color="{Binding Source={x:Static properties:Settings.Default},Path=AccentColor}" />
+    </Window.Resources>
+
+
+    <Grid Margin="5,5,5,5">
+
+
+        <tb:TaskbarIcon
+            x:Name="TaskBarIcon"
+            IconSource="/Images/AppIcons/Logo.ico"
+            ToolTipText="Amazon Price Checker"
+            TrayMouseDoubleClick="TaskBarIcon_doubleClick"
+            ContextMenu="{StaticResource TaskBar_cntxtmenu}"/>
+
+
+        <TabControl x:Name="windowTabs_tabcntrl" BorderThickness="1" BorderBrush="Gray" Margin="4" >
+            <!--+++++++++++++++++++++++++++++++ Home +++++++++++++++++++++++++++++++ -->
+            <TabItem x:Name="home_tab" HorizontalAlignment="Center" Padding="20,0,20,0" Height="25">
+                <TabItem.Header>
+                    <Label Content="Home" MouseLeftButtonDown="Tab_click">
+                        <Label.Style>
+                            <Style TargetType="Label">
+                                <Style.Triggers>
+                                    <MultiDataTrigger>
+                                        <MultiDataTrigger.Conditions>
+                                            <Condition Binding="{Binding ElementName=home_tab, Path=IsSelected}" Value="True" />
+                                        </MultiDataTrigger.Conditions>
+                                        <Setter Property="FontWeight" Value="Black" />
+                                        <Setter Property="Foreground" Value="{StaticResource AccentColor}" />
+                                    </MultiDataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Label.Style>
+                    </Label>
+                </TabItem.Header>
+
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="35"/>
+                        <RowDefinition Height="25"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="100"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock FontSize="15" FontWeight="Bold" TextDecorations="Underline" HorizontalAlignment="Center"
+                               VerticalAlignment="Center" Margin="0,10,0,0" Foreground="{StaticResource AccentColor}">
+                        Last Price Check:
+                    </TextBlock>
+
+                    <TextBlock x:Name="lastExecutedRuntime_txt" Grid.Row="1" FontSize="15" HorizontalAlignment="Center"
+                               Text="{Binding Source={x:Static properties:Settings.Default},Path=LastPriceCheck}"
+                               VerticalAlignment="Top"/>
+
+                    <TextBlock FontSize="15" Grid.Column="1" FontWeight="Bold" TextDecorations="Underline" 
+                               Foreground="{StaticResource AccentColor}"
+                               HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,10,0,0">
+                        Next Scheduled Price Check:
+                    </TextBlock>
+
+                    <TextBlock x:Name="nextScheduledRuntime_txt" FontSize="15" Grid.Column="1" Grid.Row="1" 
+                               HorizontalAlignment="Center" VerticalAlignment="Top"
+                               Text="{Binding Source={x:Static properties:Settings.Default},Path=NextScheduledPriceCheck}"
+                               Visibility="{Binding IsChecked, Converter={StaticResource BooleanToVisibilityConverter}, ElementName=schedulerEnabled_chbx}"/>
+
+                    <DataGrid x:Name="runtimeLog_dataGrid" Grid.Row="2" Grid.ColumnSpan="2"
+                              IsReadOnly="True" VerticalAlignment="Stretch" HorizontalAlignment="Stretch"
+                              AutoGenerateColumns="False" SelectionMode="Single" GridLinesVisibility="Horizontal" 
+                              HorizontalGridLinesBrush="LightGray" HeadersVisibility="None" MinRowHeight="50"
+                              Margin="10" AlternationCount="2" AlternatingRowBackground="#EDEDED" >
+                        <DataGrid.Columns>
+                            <DataGridTemplateColumn Width="25">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Image Source="{Binding LogImage}" />
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTextColumn Header="LogText" Binding="{Binding LogText}" CanUserResize="False" 
+                                                CanUserSort="False" CanUserReorder="False"/>
+                        </DataGrid.Columns>
+                        <DataGrid.RowStyle>
+                            <Style TargetType="{x:Type DataGridRow}">
+                                <Setter Property="FontSize" Value="15"/>
+                            </Style>
+                        </DataGrid.RowStyle>
+                        <DataGrid.Resources>
+                            <ResourceDictionary>
+                                <Style x:Key="{x:Type DataGridCell}" TargetType="{x:Type DataGridCell}">
+                                    <Setter Property="Background" Value="Transparent" />
+                                    <Setter Property="BorderBrush" Value="Transparent" />
+                                    <Setter Property="Foreground" Value="Black"/>
+                                    <Style.Triggers>
+                                        <Trigger Property="IsSelected" Value="True">
+                                            <Setter Property="Background" Value="Transparent" />
+                                            <Setter Property="BorderBrush" Value="Transparent" />
+                                        </Trigger>
+                                    </Style.Triggers>
+                                </Style>
+                                <Style TargetType="{x:Type DataGridRow}">
+                                    <Setter Property="Background" Value="{x:Null}" />
+                                    <Setter Property="BorderBrush" Value="{x:Null}" />
+                                    <Style.Triggers>
+                                        <Trigger Property="IsSelected" Value="True">
+                                            <Setter Property="Background" Value="{x:Null}" />
+                                            <Setter Property="BorderBrush" Value="{x:Null}" />
+                                        </Trigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </ResourceDictionary>
+                        </DataGrid.Resources>
+
+
+                    </DataGrid>
+
+
+                    <Button x:Name="startPriceCheck_btn" Grid.Row="3" Grid.ColumnSpan="2" Grid.RowSpan="2" HorizontalAlignment="Center" 
+                            VerticalAlignment="Center" Width="125" Height="40" Click="StartPriceCheck_click" Content="Start Price Check"/>
+
+                </Grid>
+            </TabItem>
+
+
+            <!-- +++++++++++++++++++++++++++++++ Settings +++++++++++++++++++++++++++++++ -->
+            <TabItem x:Name="settings_tab" HorizontalAlignment="Center" Padding="20,0,20,0" Height="25">
+                <TabItem.Header>
+                    <Label Content="Settings"  MouseLeftButtonDown="Tab_click">
+                        <Label.Style>
+                            <Style TargetType="Label">
+                                <Style.Triggers>
+                                    <MultiDataTrigger>
+                                        <MultiDataTrigger.Conditions>
+                                            <Condition Binding="{Binding ElementName=settings_tab, Path=IsSelected}" Value="True" />
+                                        </MultiDataTrigger.Conditions>
+                                        <Setter Property="FontWeight" Value="Black" />
+                                        <Setter Property="Foreground" Value="{StaticResource AccentColor}" />
+                                    </MultiDataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Label.Style>
+                    </Label>
+                </TabItem.Header>
+
+
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="19*"/>
+                        <ColumnDefinition Width="290*"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <ScrollViewer x:Name="settings_scrollViewer" Grid.Row="0" VerticalScrollBarVisibility="Auto" Grid.ColumnSpan="2">
+                        <ScrollViewer.Background>
+                            <ImageBrush ImageSource="/Images/AppIcons/Logo.png" Opacity="0.075" Stretch="Uniform"/>
+                        </ScrollViewer.Background>
+                        <Grid ScrollViewer.CanContentScroll="True">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition/>
+                            </Grid.ColumnDefinitions>
+
+                            <Expander x:Name="behavior_expander" Header="Behavior" IsExpanded="True" Margin="0,0,0,5" 
+                                      PreviewMouseLeftButtonUp="Expander_PreviewMouseLeftButtonUp">
+                                <Expander.Resources>
+                                    <Style TargetType="{x:Type Expander}">
+                                        <Setter Property="HeaderTemplate">
+                                            <Setter.Value>
+                                                <DataTemplate>
+                                                    <TextBlock FontWeight="SemiBold" FontSize="20" Text="Behavior" 
+                                                               Foreground="{StaticResource AccentColor}"/>
+                                                </DataTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Style>
+                                </Expander.Resources>
+
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="30"/>
+                                        <RowDefinition Height="30"/>
+                                        <RowDefinition Height="30"/>
+                                        <RowDefinition Height="30"/>
+                                        <RowDefinition Height="30"/>
+                                        <RowDefinition Height="30"/>
+                                        <RowDefinition Height="30"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+                                    <Grid.Resources>
+                                        <BooleanToVisibilityConverter x:Key="toggleResizeControlsConverter"/>
+                                    </Grid.Resources>
+
+                                    <Border Grid.RowSpan="9"  BorderThickness="1" CornerRadius="4" Padding="5"  BorderBrush="LightGray" Margin="10,-5,10,-5" />
+
+                                    <CheckBox x:Name="startOnStartup_chbx" Margin="20,10,0,0" FontSize="15" VerticalAlignment="Top"  
+                                              VerticalContentAlignment="Center" Content="Start on startup" />
+
+                                    <CheckBox x:Name="startInTray_chbx" Margin="20,10,0,0" FontSize="15" VerticalAlignment="Top"  
+                                              VerticalContentAlignment="Center" Content="Start in tray" Grid.Row="1"/>
+
+                                    <CheckBox x:Name="minimizeToTray_chbx" Margin="20,10,0,0" FontSize="15" VerticalAlignment="Top"
+                                              VerticalContentAlignment="Center" Content="Minimize to tray instead of task-bar" Grid.Row="2"/>
+
+                                    <CheckBox x:Name="closeMinimizes_chbx" Margin="20,10,0,0" FontSize="15" VerticalAlignment="Top"
+                                              VerticalContentAlignment="Center"  Content="Close button [X] minimizes window instead of closing application" Grid.Row="3"/>
+
+                                    <CheckBox x:Name="priceCheckOnLaunch_chbx" Margin="20,10,0,0" FontSize="15" VerticalAlignment="Top"
+                                              VerticalContentAlignment="Center"  Content="Check prices on launch" Grid.Row="4"/>
+
+                                    <CheckBox x:Name="limitNotifications_chbx" Margin="20,10,0,0" FontSize="15" VerticalAlignment="Top"
+                                              VerticalContentAlignment="Center"  Content="Limit an item's notification to once a day." Grid.Row="5"/>
+
+                                    <CheckBox x:Name="autoResizeBrowser_chbx" Margin="20,10,0,0" FontSize="15" VerticalAlignment="Top"
+                                              VerticalContentAlignment="Center" Content="Auto resize tabs" Grid.Row="6"/>
+
+
+
+                                    <GroupBox Grid.Row="7" Margin="30,5,30,10" Header="Resize Options"
+                                              Visibility="{Binding ElementName=autoResizeBrowser_chbx, Path=IsChecked, Converter={StaticResource toggleResizeControlsConverter}}">
+                                        <Grid>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition/>
+                                                <RowDefinition/>
+                                                <RowDefinition/>
+                                                <RowDefinition/>
+                                                <RowDefinition/>
+                                                <RowDefinition/>
+                                                <RowDefinition/>
+                                            </Grid.RowDefinitions>
+
+                                            <TextBlock Margin="5" Text="Browser Tab" TextDecorations="Underline"/>
+
+                                            <RadioButton x:Name="browserFullScreenResize_rdbtn"  FontSize="15" Margin="10,0,0,0" GroupName="browserResizeGroup" Grid.Row="1"
+                                                         VerticalContentAlignment="Center" Content="Resize browser to full screen on browser tab click" IsChecked="True"/>
+
+                                            <RadioButton x:Name="browserFitWindowResize_rdbtn"  FontSize="15" Margin="10,0,0,0" GroupName="browserResizeGroup" 
+                                                         VerticalContentAlignment="Center" Content="Resize browser to fit on browser tab click" Grid.Row="2"/>
+
+
+                                            <TextBlock Margin="5" Text="Other Tabs" TextDecorations="Underline" Grid.Row="3"/>
+
+                                            <RadioButton x:Name="resizeTabsBackToDefault_rdbtn"  FontSize="15" Margin="10,0,0,0" GroupName="tabResizeGroup" Grid.Row="4"
+                                                         VerticalContentAlignment="Center" Content="Resize tabs back to the default when navigating from browser tab" />
+
+                                            <RadioButton x:Name="resizeTabsBackToPrevious_rdbtn"  FontSize="15" Margin="10,0,0,0" GroupName="tabResizeGroup" Grid.Row="5"
+                                                         VerticalContentAlignment="Center" Content="Resize tabs back to the previous size when navigating from browser tab" />
+
+                                            <RadioButton x:Name="noResizeTabs_rdbtn"  FontSize="15" Margin="10,0,0,0" GroupName="tabResizeGroup" 
+                                                         VerticalContentAlignment="Center" Content="Do not resize tabs when navigating from browser tab" 
+                                                         Grid.Row="6" IsChecked="True"/>
+
+                                        </Grid>
+                                    </GroupBox>
+
+
+                                    <TextBlock Text=" Accent Color:" Grid.Row="8" Margin="25,10,0,0" FontSize="15" />
+
+                                    <xctk:ColorPicker Name="colorPicker" Grid.Row="8" Margin="125,10,0,0" Width="250" HorizontalAlignment="Left" ShowRecentColors="True"
+                                                      SelectedColor="#FF1E90FF" ColorMode="ColorCanvas" AvailableColorsSortingMode="HueSaturationBrightness"
+                                                      ShowStandardColors="False" UsingAlphaChannel="False"/>
+
+                                </Grid>
+                            </Expander>
+
+
+                            <Expander x:Name="scheduler_expander" Header="Schedule" Grid.Row="1" IsExpanded="True" Margin="0,0,0,5"
+                                      PreviewMouseLeftButtonUp="Expander_PreviewMouseLeftButtonUp">
+                                <Expander.Resources>
+                                    <Style TargetType="{x:Type Expander}">
+                                        <Setter Property="HeaderTemplate">
+                                            <Setter.Value>
+                                                <DataTemplate>
+                                                    <TextBlock FontWeight="SemiBold" FontSize="20" Text="Scheduler" 
+                                                               Foreground="{StaticResource AccentColor}"/>
+                                                </DataTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Style>
+                                </Expander.Resources>
+
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition/>
+                                        <RowDefinition/>
+                                        <RowDefinition/>
+                                    </Grid.RowDefinitions>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.Resources>
+                                        <BooleanToVisibilityConverter x:Key="toggleScheduleConverter"/>
+                                    </Grid.Resources>
+
+                                    <Border Grid.RowSpan="3" Grid.ColumnSpan="2" BorderThickness="1" CornerRadius="4" Padding="5"
+                                            BorderBrush="LightGray" Margin="10,-5,10,0" />
+
+                                    <CheckBox x:Name="schedulerEnabled_chbx" Margin="20,10,0,10" FontSize="15" VerticalAlignment="Top" 
+                                              VerticalContentAlignment="Center" Content="Enable" IsChecked="False"/>
+
+                                    <TextBlock Grid.ColumnSpan="2" Margin="20,10,0,0" FontSize="16" VerticalAlignment="Bottom"
+                                               HorizontalAlignment="Center" Padding="5" TextDecorations="Underline" Text="Schedule Every"
+                                               Visibility="{Binding ElementName=schedulerEnabled_chbx, Path=IsChecked, Converter={StaticResource toggleScheduleConverter}}"/>
+
+
+                                    <Slider x:Name="schedule_sldr" Grid.Row="1" Grid.ColumnSpan="2" Margin="30,20,30,15"  IsSnapToTickEnabled="True"
+                                            TickPlacement="BottomRight" TickFrequency="1" Foreground="Black"  Minimum="1" Maximum="24"
+                                            AutoToolTipPlacement="TopLeft" ToolTip="{Binding Path=Value, ElementName=schedule_sldr}" 
+                                            Visibility="{Binding ElementName=schedulerEnabled_chbx, Path=IsChecked, Converter={StaticResource toggleScheduleConverter}}">
+                                    </Slider>
+
+                                    <ComboBox x:Name="scheduleTypeSelect_cmbobox" SelectedIndex="0" FontSize="16" HorizontalContentAlignment="Left" 
+                                              VerticalContentAlignment="Center" Grid.Row="2" Grid.Column="0" Margin="20,10,0,10" Width="70"
+                                              DropDownClosed="ScheduleTimeSelect_dropDownClosed"
+                                              Visibility="{Binding ElementName=schedulerEnabled_chbx, Path=IsChecked, Converter={StaticResource toggleScheduleConverter}}">
+                                        <ComboBoxItem Content="Hours"/>
+                                        <ComboBoxItem Content="Days"/>
+                                    </ComboBox>
+
+                                    <TextBox x:Name="schedule_txt" Grid.Row="2" FontSize="15" HorizontalContentAlignment="Center"
+                                             VerticalContentAlignment="Center" Margin="10,0,0,0" Width="50" IsEnabled="False" Grid.Column="1"
+                                             HorizontalAlignment="Left" Height="28" Text="{Binding Path=Value, ElementName=schedule_sldr}"
+                                             Visibility="{Binding ElementName=schedulerEnabled_chbx, Path=IsChecked, Converter={StaticResource toggleScheduleConverter}}"/>
+
+                                </Grid>
+
+
+                            </Expander>
+
+                            <Expander x:Name="notifications_expander" Header="Notifications" Grid.Row="2" IsExpanded="True" Margin="0,0,0,5"
+                                      PreviewMouseLeftButtonUp="Expander_PreviewMouseLeftButtonUp">
+                                <Expander.Resources>
+                                    <Style TargetType="{x:Type Expander}">
+                                        <Setter Property="HeaderTemplate">
+                                            <Setter.Value>
+                                                <DataTemplate>
+                                                    <TextBlock FontWeight="SemiBold" FontSize="20" Text="Notifications" 
+                                                               Foreground="{StaticResource AccentColor}"/>
+                                                </DataTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Style>
+                                </Expander.Resources>
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition/>
+                                        <ColumnDefinition/>
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.Resources>
+                                        <BooleanToVisibilityConverter x:Key="toggleNotificationTypesConverter"/>
+                                    </Grid.Resources>
+                                    <Border Grid.RowSpan="5" Grid.ColumnSpan="2" BorderThickness="1" 
+                                            CornerRadius="4" Padding="5" BorderBrush="LightGray" Margin="10,-5,10,0" />
+
+                                    <CheckBox x:Name="notifications_chbx" Margin="22,10,0,10" FontSize="15" VerticalAlignment="Top" 
+                                              VerticalContentAlignment="Center" Grid.ColumnSpan="2" 
+                                              Content="Receive notifications when items reach desired price" />
+
+                                    <GroupBox Grid.Row="1" Grid.ColumnSpan="2" Grid.RowSpan="4" Margin="20,5,20,10" Header="Notification Types"
+                                              Visibility="{Binding ElementName=notifications_chbx, Path=IsChecked, Converter={StaticResource toggleNotificationTypesConverter}}">
+
+
+                                        <Grid >
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition/>
+                                                <RowDefinition/>
+                                                <RowDefinition/>
+                                                <RowDefinition/>
+                                                <RowDefinition/>
+                                                <RowDefinition/>
+                                                <RowDefinition/>
+                                                <RowDefinition/>
+                                            </Grid.RowDefinitions>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="70"/>
+                                                <ColumnDefinition Width="375*"/>
+                                                <ColumnDefinition Width="75*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Grid.Resources>
+                                                <BooleanToVisibilityConverter x:Key="toggleEmailControlsConverter"/>
+                                                <BooleanToVisibilityConverter x:Key="toggleTextControlsConverter"/>
+                                            </Grid.Resources>
+
+                                            <CheckBox x:Name="email_chbx"  FontSize="15" VerticalAlignment="Top" VerticalContentAlignment="Center"
+                                                      Content="Email" Grid.ColumnSpan="2"/>
+
+                                            <TextBlock FontSize="11" VerticalAlignment="Center" Grid.Column="1" 
+                                                       Text="(must have a Gmail account)" HorizontalAlignment="Left" />
+
+                                            <TextBlock Grid.Row="1" Margin="5" FontSize="15" Text="Address:" HorizontalAlignment="Right"
+                                                       Visibility="{Binding ElementName=email_chbx, Path=IsChecked, Converter={StaticResource toggleEmailControlsConverter}}"/>
+
+                                            <TextBox x:Name="email_txtbx" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3" HorizontalAlignment="Stretch" 
+                                                     VerticalContentAlignment="Center" Padding="5,0,0,0" Height="30" Margin="0,0,10,5"
+                                                     Visibility="{Binding ElementName=email_chbx, Path=IsChecked, Converter={StaticResource toggleEmailControlsConverter}}"/>
+
+
+                                            <CheckBox x:Name="textMessages_chbx"  FontSize="15" VerticalAlignment="Top" VerticalContentAlignment="Center"
+                                                      Content="Text Message" Grid.Row="3" Grid.ColumnSpan="2"/>
+
+                                            <TextBlock FontSize="11" VerticalAlignment="Center" Grid.Row="3" Grid.Column="1"
+                                                       Text="(must have a Gmail account)" HorizontalAlignment="Left" Margin="50,0,0,0"/>
+
+                                            <TextBlock Grid.Row="4" Margin="5" FontSize="15" Text="Number:" HorizontalAlignment="Right"
+                                                       Visibility="{Binding ElementName=textMessages_chbx, Path=IsChecked, Converter={StaticResource toggleTextControlsConverter}}"/>
+
+                                            <TextBox x:Name="phoneNumber_txtbx" Grid.Row="4" Grid.Column="1" HorizontalAlignment="Stretch" Height="30" Margin="0,0,0,5" Padding="5,0,0,0"
+                                                     VerticalContentAlignment="Center" PreviewTextInput="PhoneNumbertxtbx_previewTextinput"
+                                                     Visibility="{Binding ElementName=textMessages_chbx, Path=IsChecked, Converter={StaticResource toggleTextControlsConverter}}"/>
+
+                                            <TextBlock Grid.Row="4" Grid.Column="2" Margin="5" FontSize="15" Text="Carrier:" HorizontalAlignment="Right"
+                                                       Visibility="{Binding ElementName=textMessages_chbx, Path=IsChecked, Converter={StaticResource toggleTextControlsConverter}}"/>
+
+                                            <ComboBox x:Name="carrier_cmbobox" Grid.Row="4" Grid.Column="3" Margin="5,0,5,5" Width="125" HorizontalAlignment="Stretch" VerticalContentAlignment="Center"
+                                                      Visibility="{Binding ElementName=textMessages_chbx, Path=IsChecked, Converter={StaticResource toggleTextControlsConverter}}" Padding="5">
+                                                <ComboBoxItem Content="Select carrier" Tag="" IsSelected="True"/>
+                                                <ComboBoxItem Content="AT&amp;T" Tag="@txt.att.net" />
+                                                <ComboBoxItem Content="Boost Mobile" Tag="@sms.myboostmobile.com"/>
+                                                <ComboBoxItem Content="Cricket Wireless" Tag="@mms.cricketwireless.net"/>
+                                                <ComboBoxItem Content="MetroPCS" Tag="@mymetropcs.com"/>
+                                                <ComboBoxItem Content="Sprint" Tag="@messaging.sprintpcs.com"/>
+                                                <ComboBoxItem Content="T-Mobile" Tag="@tmomail.net"/>
+                                                <ComboBoxItem Content="U.S. Cellular" Tag="@email.uscc.net"/>
+                                                <ComboBoxItem Content="Verizon Wireless" Tag="@vtext.com"/>
+                                                <ComboBoxItem Content="Virgin Mobile" Tag="@vmobl.com"/>
+                                            </ComboBox>
+
+                                            <CheckBox x:Name="popupNotification_chbx"  FontSize="15" VerticalAlignment="Top" VerticalContentAlignment="Center" 
+                                                      Content="Popup window" Grid.Row="5" Grid.ColumnSpan="3"/>
+
+                                            <Button x:Name="testNotifications_btn" Content="Test Notifications" Width="110" Height="30" FontSize="12"
+                                                    Grid.Row="6" Grid.Column="0" Grid.ColumnSpan="4" HorizontalAlignment="Center"  Click="TestNotifications_click">
+                                                <Button.Style>
+                                                    <Style TargetType="Button">
+                                                        <Style.Triggers>
+                                                            <MultiDataTrigger>
+                                                                <MultiDataTrigger.Conditions>
+                                                                    <Condition Binding="{Binding ElementName=email_chbx, Path=IsChecked}" Value="False" />
+                                                                    <Condition Binding="{Binding ElementName=textMessages_chbx, Path=IsChecked}" Value="False" />
+                                                                    <Condition Binding="{Binding ElementName=popupNotification_chbx, Path=IsChecked}" Value="False" />
+                                                                </MultiDataTrigger.Conditions>
+                                                                <Setter Property="IsEnabled" Value="False" />
+                                                                <Setter Property="Visibility" Value="Collapsed" />
+                                                            </MultiDataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Button.Style>
+                                            </Button>
+
+                                        </Grid>
+                                    </GroupBox>
+                                </Grid>
+                            </Expander>
+                        </Grid>
+                    </ScrollViewer>
+
+                    <Button x:Name="saveSettings_btn" Grid.Row="1" Content="Save" Width="75" Height="30" Grid.ColumnSpan="4"
+                            HorizontalAlignment="Center" VerticalAlignment="Bottom"  Click="SaveSettings_Click" Margin="10"/>
+                </Grid>
+
+            </TabItem>
+
+
+            <!-- +++++++++++++++++++++++++++++++ Watch List +++++++++++++++++++++++++++++++ -->
+            <TabItem x:Name="watchList_tab" HorizontalAlignment="Center" Padding="20,0,20,0" Height="25">
+                <TabItem.Header>
+                    <Label Content="Watch List"  MouseLeftButtonDown="Tab_click" >
+                        <Label.Style>
+                            <Style TargetType="Label">
+                                <Style.Triggers>
+                                    <MultiDataTrigger>
+                                        <MultiDataTrigger.Conditions>
+                                            <Condition Binding="{Binding ElementName=watchList_tab, Path=IsSelected}" Value="True" />
+                                        </MultiDataTrigger.Conditions>
+                                        <Setter Property="FontWeight" Value="Black" />
+                                        <Setter Property="Foreground" Value="{StaticResource AccentColor}" />
+                                    </MultiDataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Label.Style>
+                    </Label>
+                </TabItem.Header>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="600*"/>
+                        <RowDefinition Height="125"/>
+                    </Grid.RowDefinitions>
+
+                    <DataGrid x:Name="watchListItems_datagrid" SelectionMode="Single" Grid.Row="0" RowHeight="30" MinHeight="30" 
+                              AutoGenerateColumns="False" IsReadOnly="True" Margin="10,10,10,10" ColumnHeaderHeight="33" >
+                        <DataGrid.Resources>
+                            <Style TargetType="{x:Type DataGridColumnHeader}">
+                                <Setter Property="Foreground" Value="{StaticResource AccentColor}"/>
+                                <Setter Property="FontWeight" Value="Bold"/>
+                                <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                            </Style>
+                            <Style TargetType="DataGridRow">
+                                <EventSetter Event="MouseDoubleClick" Handler="watchListItems_RowDoubleClick"/>
+                            </Style>
+                        </DataGrid.Resources>
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="100" Visibility="Hidden"/>
+                            <DataGridTextColumn Header="Url" Binding="{Binding Url}" MaxWidth="0" Visibility="Hidden"/>
+                            <DataGridTextColumn Header="Title" Binding="{Binding Title}" MinWidth="50" Width="300*" />
+                            <DataGridTextColumn Header="Current Price" Binding="{Binding Price}" Width="100"/>
+                            <DataGridTextColumn Header="Desired Price" Binding="{Binding DesiredPrice}" Width="100"/>
+                            <DataGridTextColumn Header="Create Date" Binding="{Binding CreateDate}" Width="150"/>
+                            <DataGridTextColumn Header="Last Price Check" Binding="{Binding LastModifiedDate}" Width="150" />
+                            <DataGridTextColumn Header="Last Notified Date" Binding="{Binding LastNotifiedDate}" MaxWidth="0" Visibility="Hidden"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+
+                    <Grid Grid.Row="1" >
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition/>
+                            <ColumnDefinition/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition />
+                        </Grid.RowDefinitions>
+                        <Button Content="Edit" Grid.Row="0" Grid.Column="0" Width="100" Height="40" FontSize="18"
+                                VerticalAlignment="Center" HorizontalAlignment="Stretch" Click="AmazonItemEdit_Click"  />
+
+                        <Button Content="Delete" Grid.Row="0" Grid.Column="1" Width="100" Height="40" FontSize="18"
+                                VerticalAlignment="Center" HorizontalAlignment="Stretch" Click="AmazonItemDelete_Click" />
+                    </Grid>
+                </Grid>
+
+            </TabItem>
+
+            <!-- +++++++++++++++++++++++++++++++ Browser +++++++++++++++++++++++++++++++ -->
+            <TabItem x:Name="browser_tab" HorizontalAlignment="Center" Padding="20,0,20,0" Height="25">
+                <TabItem.Header>
+                    <Label Content="Browser"  MouseLeftButtonDown="Tab_click">
+                        <Label.Style>
+                            <Style TargetType="Label">
+                                <Style.Triggers>
+                                    <MultiDataTrigger>
+                                        <MultiDataTrigger.Conditions>
+                                            <Condition Binding="{Binding ElementName=browser_tab, Path=IsSelected}" Value="True" />
+                                        </MultiDataTrigger.Conditions>
+                                        <Setter Property="FontWeight" Value="Black" />
+                                        <Setter Property="Foreground" Value="{StaticResource AccentColor}" />
+                                    </MultiDataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Label.Style>
+                    </Label>
+                </TabItem.Header>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <Grid>
+                        <Grid.Resources>
+                            <Style TargetType="{x:Type Button}">
+                                <Setter Property="Margin" Value="2,5" />
+                            </Style>
+                            <Style TargetType="{x:Type TextBox}">
+                                <Setter Property="Margin" Value="2,5" />
+                            </Style>
+                        </Grid.Resources>
+
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <Button Command="{Binding WebBrowser.BackCommand, ElementName=Browser}" Width="60" >
+                            <Image Source="/Images/BrowserIcons/back_arrow.png" Width="30" Height="20"/>
+                        </Button>
+
+                        <Button Command="{Binding WebBrowser.ForwardCommand, ElementName=Browser}" Grid.Column="1" Width="60">
+                            <Image Source="/Images/BrowserIcons/forward_arrow.png" Width="30" Height="20"/>
+                        </Button>
+
+                        <TextBox x:Name="urlAddress_txtbox" Grid.Column="2" FontSize="14" BorderBrush="Gray" VerticalContentAlignment="Center" 
+                                 BorderThickness="1" Text="{Binding Address, ElementName=Browser, FallbackValue=www.amazon.com}">
+                            <i:Interaction.Behaviors>
+                                <behaviors:TextBoxBindingUpdateOnEnterBehavior />
+                            </i:Interaction.Behaviors>
+                        </TextBox>
+
+                        <Button x:Name="priceWatch_btn" Grid.Column="3" Width="50" Click="PriceWatch_Click">
+                            <DynamicResource ResourceKey="PriceWatch_img"/>
+                        </Button>
+                    </Grid>
+
+                    <Border Grid.Row="1" BorderBrush="Gray" BorderThickness="0,1">
+                        <wpf:ChromiumWebBrowser x:Name="Browser"
+                                    Address="https://www.amazon.com">
+                            <i:Interaction.Behaviors>
+                                <behaviors:HoverLinkBehavior x:Name="HoverLinkBehavior"/>
+                            </i:Interaction.Behaviors>
+                        </wpf:ChromiumWebBrowser>
+                    </Border>
+
+                    <ProgressBar IsIndeterminate="{Binding IsLoading, ElementName=Browser}" HorizontalAlignment="Stretch"
+                     VerticalAlignment="Top" Width="Auto" Grid.Row="1" Height="4"  BorderThickness="0" 
+                     Visibility="{Binding IsLoading, ElementName=Browser, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+
+
+                    <StatusBar Grid.Row="2" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                        <StatusBar.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                </Grid>
+                            </ItemsPanelTemplate>
+                        </StatusBar.ItemsPanel>
+                        <StatusBarItem Grid.Column="0">
+                            <TextBlock Text="{Binding HoverLink, ElementName=HoverLinkBehavior}" Grid.Column="2" HorizontalAlignment="Stretch" VerticalAlignment="Center" 
+                                       Foreground="{StaticResource AccentColor}"/>
+                        </StatusBarItem>
+                        <Separator Grid.Column="1" />
+                        <StatusBarItem Grid.Column="2">
+                            <TextBlock x:Name="helperWebBrowser_txt" HorizontalAlignment="Right" TextAlignment="Right" Grid.Column="3" VerticalAlignment="Center"/>
+                        </StatusBarItem>
+                    </StatusBar>
+
+                </Grid>
+
+            </TabItem>
+
+
+        </TabControl>
+    </Grid>
+</Window>

@@ -1,0 +1,104 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    x:Class="Amazon_Price_Checker.TaskbarResourceDisctionary"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:TrayCommands="clr-namespace:Amazon_Price_Checker.NotificationTray.TaskIconCommands"
+                    xmlns:Main="clr-namespace:Amazon_Price_Checker"
+                    xmlns:local="clr-namespace:Amazon_Price_Checker.NotificationTray">
+
+    <LinearGradientBrush x:Key="MenuBackground"
+                         EndPoint="0.5,1"
+                         StartPoint="0.5,0">
+        <GradientStop Color="#FFFFD892"
+                      Offset="1" />
+        <GradientStop Color="#FFFFF3DD"
+                      Offset="0.259" />
+    </LinearGradientBrush>
+
+
+    <Style TargetType="{x:Type ContextMenu}">
+        <Setter Property="BorderThickness"
+                Value="1,1,1,1" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type ContextMenu}">
+                    <Grid>
+                        <Border Background="White"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}">
+                            <ScrollViewer
+                                Style="{DynamicResource {ComponentResourceKey ResourceId=MenuScrollViewer, TypeInTargetAssembly={x:Type FrameworkElement}}}"
+                                Uid="ScrollViewer_9"
+                                CanContentScroll="True">
+                                <ItemsPresenter Margin="{TemplateBinding Padding}"
+                                                SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"
+                                                KeyboardNavigation.DirectionalNavigation="Cycle" />
+                            </ScrollViewer>
+                        </Border>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+
+    <ContextMenu x:Shared="false"
+                 x:Key="TaskBar_cntxtmenu">
+
+        <MenuItem IsEnabled="False"
+                  Header="{Binding Path=ToolTipText}">
+            <MenuItem.Icon>
+                <Image Width="16"
+                       Height="16"
+                       Source="{Binding Path=IconSource}"/>
+            </MenuItem.Icon>
+        </MenuItem>
+
+        <MenuItem Header="Start Price Check"
+                  Command="{TrayCommands:StartPriceCheckCommand}"
+                  CommandParameter="{Binding}">
+            <MenuItem.Icon>
+                <Image Width="16"
+                       Height="16"
+                       Source="/Images/LogIcons/Start.png" />
+            </MenuItem.Icon>
+        </MenuItem>
+
+        <MenuItem Header="Show Amazon Price Checker"
+                  Command="{TrayCommands:ShowWindowCommand}"
+                  CommandParameter="{Binding}">
+            <MenuItem.Icon>
+                <Image Width="16"
+                       Height="16"
+                       Source="/Images/TrayIcons/Show.png" />
+            </MenuItem.Icon>
+        </MenuItem>
+
+        <Separator />
+
+        <MenuItem Header="Hide Amazon Price Checker"
+                  Command="{TrayCommands:HideWindowCommand}"
+                  CommandParameter="{Binding}">
+            <MenuItem.Icon>
+                <Image Width="16"
+                       Height="16"
+                       Source="/Images/TrayIcons/Hide.png" />
+            </MenuItem.Icon>
+        </MenuItem>
+
+        <Separator />
+
+        <MenuItem Header="Exit"
+                  Command="{TrayCommands:ExitApplicationCommand}"
+                  CommandParameter="{Binding}">
+            <MenuItem.Icon>
+                <Image Width="16"
+                       Height="16"
+                       Source="/Images/LogIcons/Error.png" />
+            </MenuItem.Icon>
+        </MenuItem>
+
+
+
+    </ContextMenu>
+
+</ResourceDictionary>
