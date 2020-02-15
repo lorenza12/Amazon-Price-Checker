@@ -77,5 +77,8 @@
     <Setting Name="AccentColor" Type="System.String" Scope="User">
       <Value Profile="(Default)">#FF1E90FF</Value>
     </Setting>
+    <Setting Name="LogLevel" Type="System.String" Scope="User">
+      <Value Profile="(Default)">ERROR</Value>
+    </Setting>
   </Settings>
 </SettingsFile>

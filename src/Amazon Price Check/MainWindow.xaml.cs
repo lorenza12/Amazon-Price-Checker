@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -16,8 +18,6 @@ using Amazon_Price_Checker.NotificationTray;
 using Amazon_Price_Checker.Windows;
 using CefSharp;
 using Hardcodet.Wpf.TaskbarNotification;
-
-
 
 namespace Amazon_Price_Checker
 {
@@ -41,7 +41,6 @@ namespace Amazon_Price_Checker
         public MainWindow()
         {
             InitializeComponent();
-
 
             FillToolTips();
 
@@ -96,6 +95,23 @@ namespace Amazon_Price_Checker
 
         #region Settings
 
+        private void OpenLog_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var baseDir = System.AppDomain.CurrentDomain.BaseDirectory;
+                string logFile = "AmazonPriceChecker.log";
+                var logDir = Path.Combine(baseDir, logFile);
+                CommonFunctions.Log.Debug($"Opening log file:= {logDir}");
+
+                Process.Start(logDir);
+            }
+            catch (Exception ex)
+            {
+                CommonFunctions.Log.Error("Error opening log file location", ex);
+            }
+        }
+
         private void StartScheduler()
         {
             try
@@ -122,6 +138,7 @@ namespace Amazon_Price_Checker
 
                 //Update the next scheduled runtime settings
                 CommonFunctions.UserSettings.SetNextScheduledPriceCheck(GetSchedulerNextRunTime());
+                CommonFunctions.Log.Debug($"Auto price checking in {intervalMilliseconds} ms");
 
             }
             catch (Exception e)
@@ -166,6 +183,7 @@ namespace Amazon_Price_Checker
 
                     //Update the next scheduled runtime settings
                     CommonFunctions.UserSettings.SetNextScheduledPriceCheck(GetSchedulerNextRunTime());
+                    CommonFunctions.Log.Debug($"Scheduler changed to {intervalMilliseconds} ms");
                 }
             }
             catch (Exception e)
@@ -205,6 +223,9 @@ namespace Amazon_Price_Checker
         {
             try
             {
+                CommonFunctions.Log.Debug($"Loading Settings");
+                CommonFunctions.UserSettings.LogSettings();
+
                 lastExecutedRuntime_txt.Text = CommonFunctions.UserSettings.LastPriceCheck.Year == 1 ? "" : CommonFunctions.UserSettings.LastPriceCheck.ToString();
 
                 startOnStartup_chbx.IsChecked = CommonFunctions.UserSettings.StartOnStartup;
@@ -220,6 +241,7 @@ namespace Amazon_Price_Checker
                 resizeTabsBackToPrevious_rdbtn.IsChecked = CommonFunctions.UserSettings.ResizeTabsToPrevious;
                 resizeTabsBackToDefault_rdbtn.IsChecked = CommonFunctions.UserSettings.ResizeTabsToDefault;
                 noResizeTabs_rdbtn.IsChecked = CommonFunctions.UserSettings.NoResizingTabs;
+                logLevel_cmbobox.SelectedItem = logLevel_cmbobox.Items.Cast<ComboBoxItem>().Where(e => e.Content.ToString() == CommonFunctions.UserSettings.LogLevel).FirstOrDefault();
                 colorPicker.SelectedColor = (Color)ColorConverter.ConvertFromString(CommonFunctions.UserSettings.AccentColor);
 
                 schedulerEnabled_chbx.IsChecked = CommonFunctions.UserSettings.SchedulerEnabled;
@@ -274,6 +296,7 @@ namespace Amazon_Price_Checker
                                                               resizeTabsBackToPrevious_rdbtn.IsChecked ?? false,
                                                               resizeTabsBackToDefault_rdbtn.IsChecked ?? false,
                                                               noResizeTabs_rdbtn.IsChecked ?? false,
+                                                              ((ComboBoxItem)logLevel_cmbobox.SelectedItem).Content.ToString(),
                                                               colorPicker.SelectedColor.ToString(),
                                                               schedulerEnabled_chbx.IsChecked ?? false,
                                                               Convert.ToInt32(schedule_sldr.Value),
@@ -297,6 +320,7 @@ namespace Amazon_Price_Checker
 
                 if (schedulerEnabledChanged || scheduleTimeChanged || scheduleOptionChanged)
                     UpdatedScheduler(schedulerEnabledChanged, scheduleTimeChanged, scheduleOptionChanged);
+
 
                 if (!settingsSaved)
                 {
@@ -430,6 +454,7 @@ namespace Amazon_Price_Checker
             resizeTabsBackToDefault_rdbtn.ToolTip = "Resize all other tabs back to default after navigating from the browser tab";
             resizeTabsBackToPrevious_rdbtn.ToolTip = "Resize all other tabs back to their previous size when navigating from the browser tab";
             noResizeTabs_rdbtn.ToolTip = "Do not resize the tabs back after navigating from the browser tab";
+            logLevel_cmbobox.ToolTip = "Loggin level for the application";
             colorPicker.ToolTip = "Change the application's accent color";
 
             schedulerEnabled_chbx.ToolTip = "Enable the scheduler";
@@ -507,6 +532,7 @@ namespace Amazon_Price_Checker
                                          resizeTabsBackToPrevious_rdbtn.IsChecked ?? false,
                                          resizeTabsBackToDefault_rdbtn.IsChecked ?? false,
                                          noResizeTabs_rdbtn.IsChecked ?? false,
+                                          ((ComboBoxItem)logLevel_cmbobox.SelectedItem).Content.ToString(),
                                          colorPicker.SelectedColor.ToString(),
                                          schedulerEnabled_chbx.IsChecked ?? false,
                                          Convert.ToInt32(schedule_sldr.Value),
@@ -622,8 +648,7 @@ namespace Amazon_Price_Checker
                 DateTime.TryParse(row["LastModifiedDate"].ToString(), out DateTime lastModifiedDate);
                 DateTime.TryParse(row["LastNotifiedDate"].ToString(), out DateTime lastNotifiedDate);
 
-
-
+                CommonFunctions.Log.Debug($"Adding item to watch list:= '{itemID}' '{title}' '{url}' '{amazonPrice}' '{desiredPrice}' '{createDate}' '{lastModifiedDate}' '{lastNotifiedDate}'");
                 AmazonWatchItem item = new AmazonWatchItem(itemID, title, url, amazonPrice, desiredPrice, createDate, lastModifiedDate, lastNotifiedDate);
                 watchList.Add(item);
             }
@@ -650,6 +675,7 @@ namespace Amazon_Price_Checker
 
                         if (desiredPrice > 0)
                         {
+                            CommonFunctions.Log.Debug($"Updaing price on {itemToEdit.Title} from {itemToEdit.DesiredPrice.ToString()} to {desiredPrice.ToString()}");
                             DBHelper.UpdateDesiredPrice(CommonFunctions.ItemsConnectionString, itemToEdit.Id, desiredPrice);
                             FillWatchList();
                         }
@@ -673,6 +699,7 @@ namespace Amazon_Price_Checker
             try
             {
                 AmazonWatchItem itemToDelete = (AmazonWatchItem)watchListItems_datagrid.SelectedItem;
+                CommonFunctions.Log.Debug($"Deleting item {itemToDelete.Title}");
 
                 DBHelper.DeleteItem(CommonFunctions.ItemsConnectionString, itemToDelete.Id);
                 FillWatchList();
@@ -740,7 +767,7 @@ namespace Amazon_Price_Checker
 
 
                                 bool itemInserted = DBHelper.InsertItem(CommonFunctions.ItemsConnectionString, CommonFunctions.RemoveSQLCharacters(itemTitle.Trim()), CommonFunctions.StrippedAmazonUrl(url), itemPriceF, desiredPrice);
-
+                                CommonFunctions.Log.Debug($"Price watching {itemTitle} for {desiredPrice.ToString()}");
                                 CommonFunctions.UpdatePriceWatchButton(itemInserted);
 
                                 UpdateBrowserStatusText($"{itemTitle.Trim()} is now being watched", "There was an error watching this item at this time. Please try again later", itemInserted);
@@ -877,6 +904,8 @@ namespace Amazon_Price_Checker
             {
                 previousTabHeight = Application.Current.MainWindow.Height;
                 previousTabWidth = Application.Current.MainWindow.Width;
+
+                CommonFunctions.Log.Debug($"Saving application size of {previousTabHeight} x {previousTabWidth}");
             }
 
             if (CommonFunctions.UserSettings.ResizeBrowser)
@@ -885,10 +914,13 @@ namespace Amazon_Price_Checker
                 {
                     Application.Current.MainWindow.Width = 1075;
                     Application.Current.MainWindow.Height = 800;
+
+                    CommonFunctions.Log.Debug($"Resizing application to 1075 x 800");
                 }
                 else if (CommonFunctions.UserSettings.ResizeBrowserFullScreen)
                 {
                     WindowState = WindowState.Maximized;
+                    CommonFunctions.Log.Debug($"Resizing application to fullscreen");
                 }
             }
         }
@@ -901,12 +933,14 @@ namespace Amazon_Price_Checker
                 WindowState = WindowState.Normal;
                 Application.Current.MainWindow.Width = previousTabWidth;
                 Application.Current.MainWindow.Height = previousTabHeight;
+                CommonFunctions.Log.Debug($"Resizing application to {previousTabHeight} x {previousTabWidth}");
             }
             else if (CommonFunctions.UserSettings.ResizeTabsToDefault)
             {
                 WindowState = WindowState.Normal;
                 Application.Current.MainWindow.Width = 650;
                 Application.Current.MainWindow.Height = 800;
+                CommonFunctions.Log.Debug($"Resizing application to 650 x 800");
             }
         }
 
@@ -940,6 +974,7 @@ namespace Amazon_Price_Checker
                     case WindowState.Minimized:
                         if (CommonFunctions.UserSettings.MinimizeToTray)
                         {
+                            CommonFunctions.Log.Debug($"Hiding application");
                             this.Visibility = Visibility.Hidden;
 
                             TaskBarNotification popupNotification = new TaskBarNotification();
@@ -967,6 +1002,7 @@ namespace Amazon_Price_Checker
             {
                 if (CommonFunctions.UserSettings.MinimizeOnClose && !IsExiting)
                 {
+                    CommonFunctions.Log.Debug($"Hiding application on close");
                     this.Visibility = Visibility.Hidden;
                     e.Cancel = true;
 
@@ -1032,8 +1068,8 @@ namespace Amazon_Price_Checker
 
 
 
-        #endregion
 
+        #endregion
 
     }
 }

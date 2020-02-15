@@ -32,6 +32,8 @@ namespace Amazon_Price_Checker.Common
 
         public bool ResizeTabsToDefault { get; set; }
 
+        public string LogLevel { get; set; }
+
         public string AccentColor { get; set; }
 
         #endregion
@@ -77,7 +79,7 @@ namespace Amazon_Price_Checker.Common
 
         public bool SaveSettings(bool startOnStartup, bool startInTray, bool minimizeToTray, bool minimizeOnClose,
                                  bool priceCheckOnLaunch, bool limitNotifications, bool resizeBrowser, bool resizeBrowserFullScreen, bool resizeBrowserToFit,
-                                 bool resizeTabsToPrevious, bool resizeTabsToDefault, bool resizeTabs, string accentColor, bool schedulerEnabled, int scheduleTime,
+                                 bool resizeTabsToPrevious, bool resizeTabsToDefault, bool resizeTabs, string logLevel, string accentColor, bool schedulerEnabled, int scheduleTime,
                                  string schedulerOption, bool receiveNotifications, bool emailNotifications, string emailAddress, bool textNotifications,
                                  string phoneNumber, string carrierAddress, bool popupNotifications)
         {
@@ -87,6 +89,8 @@ namespace Amazon_Price_Checker.Common
                 //Add or remove from registry if the startup checkbox changed
                 if (Properties.Settings.Default.StartOnStartup != startOnStartup)
                     ToggleStartupRegistry(startOnStartup);
+                if (Properties.Settings.Default.LogLevel != logLevel)
+                    UpdateLogLevel(logLevel);
 
                 Properties.Settings.Default.StartOnStartup = startOnStartup;
                 Properties.Settings.Default.StartInTray = startInTray;
@@ -100,6 +104,7 @@ namespace Amazon_Price_Checker.Common
                 Properties.Settings.Default.ResizeTabsToPrevious = resizeTabsToPrevious;
                 Properties.Settings.Default.ResizeTabsToDefault = resizeTabsToDefault;
                 Properties.Settings.Default.NoResizingTabs = resizeTabs;
+                Properties.Settings.Default.LogLevel = logLevel;
                 Properties.Settings.Default.AccentColor = accentColor;
 
                 Properties.Settings.Default.SchedulerEnabled = schedulerEnabled;
@@ -117,6 +122,8 @@ namespace Amazon_Price_Checker.Common
                 Properties.Settings.Default.Save();
 
                 FillSettings();
+                CommonFunctions.Log.Debug("Saving Settings");
+                LogSettings();
 
 
             }
@@ -132,6 +139,7 @@ namespace Amazon_Price_Checker.Common
         {
             try
             {
+                CommonFunctions.Log.Debug($"Setting last executed price check to {lastExecutedTime.ToString()}");
                 this.LastPriceCheck = lastExecutedTime;
                 Properties.Settings.Default.LastPriceCheck = lastExecutedTime;
                 Properties.Settings.Default.Save();
@@ -147,6 +155,7 @@ namespace Amazon_Price_Checker.Common
         {
             try
             {
+                CommonFunctions.Log.Debug($"Setting next scheduled price check to {nextExecutionTime.ToString()}");
                 this.NextScheduledPriceCheck = nextExecutionTime;
                 Properties.Settings.Default.NextScheduledPriceCheck = nextExecutionTime;
                 Properties.Settings.Default.Save();
@@ -159,7 +168,7 @@ namespace Amazon_Price_Checker.Common
 
         public bool DoSettingsDiffer(bool startOnStartup, bool startInTray, bool minimizeToTray, bool minimizeOnClose,
                                      bool priceCheckOnLaunch, bool limitNotifications, bool resizeBrowser, bool resizeBrowserFullScreen, bool resizeBrowserToFit,
-                                     bool resizeTabsToPrevious, bool resizeTabsToDefault, bool resizeTabs, string accentColor, bool schedulerEnabled, int scheduleTime,
+                                     bool resizeTabsToPrevious, bool resizeTabsToDefault, bool resizeTabs, string logLevel, string accentColor, bool schedulerEnabled, int scheduleTime,
                                      string schedulerOption, bool receiveNotifications, bool emailNotifications, string emailAddress, bool textNotifications,
                                      string phoneNumber, string carrierAddress, bool popupNotifications)
         {
@@ -200,6 +209,9 @@ namespace Amazon_Price_Checker.Common
                     return true;
 
                 if (this.ResizeTabsToDefault != resizeTabsToDefault)
+                    return true;
+
+                if (this.LogLevel != logLevel)
                     return true;
 
                 if (this.AccentColor != accentColor)
@@ -265,6 +277,7 @@ namespace Amazon_Price_Checker.Common
             this.NoResizingTabs = Properties.Settings.Default.NoResizingTabs;
             this.ResizeTabsToPrevious = Properties.Settings.Default.ResizeTabsToPrevious;
             this.ResizeTabsToDefault = Properties.Settings.Default.ResizeTabsToDefault;
+            this.LogLevel = Properties.Settings.Default.LogLevel;
             this.AccentColor = Properties.Settings.Default.AccentColor;
 
             this.SchedulerEnabled = Properties.Settings.Default.SchedulerEnabled;
@@ -287,15 +300,23 @@ namespace Amazon_Price_Checker.Common
         {
             try
             {
+
                 string exePath = System.Reflection.Assembly.GetExecutingAssembly().Location;
+
 
                 RegistryKey key = Registry.CurrentUser.OpenSubKey(startupKeyPath, true);
 
                 if (isAdding)
+                {
                     key.SetValue("AmazonPriceCheck", exePath);
+                    CommonFunctions.Log.Debug($"Adding {exePath} to registry");
+                }
 
                 else
+                {
                     key.DeleteValue("AmazonPriceCheck", false);
+                    CommonFunctions.Log.Debug($"Removing {exePath} from registry");
+                }
 
             }
             catch (Exception ex)
@@ -304,6 +325,39 @@ namespace Amazon_Price_Checker.Common
                 CommonFunctions.Log.Error($"Error {verb} startup registry key", ex);
             }
 
+        }
+
+        private void UpdateLogLevel(string logLevel)
+        {
+            CommonFunctions.UpdateLogLevel(logLevel);
+        }
+
+        public void LogSettings()
+        {
+            CommonFunctions.Log.Debug($"StartOnStartup:= {Properties.Settings.Default.StartOnStartup}");
+            CommonFunctions.Log.Debug($"StartInTray:= {Properties.Settings.Default.StartInTray}");
+            CommonFunctions.Log.Debug($"MinimizeToTray:= {Properties.Settings.Default.MinimizeToTray}");
+            CommonFunctions.Log.Debug($"MinimizeOnClose:= {Properties.Settings.Default.MinimizeOnClose}");
+            CommonFunctions.Log.Debug($"PriceCheckOnLaunch:= {Properties.Settings.Default.PriceCheckOnLaunch}");
+            CommonFunctions.Log.Debug($"LimitNotifications:= {Properties.Settings.Default.LimitNotifications}");
+            CommonFunctions.Log.Debug($"ResizeBrowser:= {Properties.Settings.Default.ResizeBrowser}");
+            CommonFunctions.Log.Debug($"ResizeBrowserFullScreen:= {Properties.Settings.Default.ResizeBrowserFullScreen}");
+            CommonFunctions.Log.Debug($"ResizeBrowserToFit:= {Properties.Settings.Default.ResizeBrowserToFit}");
+            CommonFunctions.Log.Debug($"ResizeTabsToPrevious:= {Properties.Settings.Default.ResizeTabsToPrevious}");
+            CommonFunctions.Log.Debug($"ResizeTabsToDefault:= {Properties.Settings.Default.ResizeTabsToDefault}");
+            CommonFunctions.Log.Debug($"NoResizingTabs:= {Properties.Settings.Default.NoResizingTabs}");
+            CommonFunctions.Log.Debug($"LogLevel:= {Properties.Settings.Default.LogLevel}");
+            CommonFunctions.Log.Debug($"AccentColor:= {Properties.Settings.Default.AccentColor}");
+            CommonFunctions.Log.Debug($"SchedulerEnabled:= {Properties.Settings.Default.SchedulerEnabled}");
+            CommonFunctions.Log.Debug($"ScheduleTime:= {Properties.Settings.Default.ScheduleTime}");
+            CommonFunctions.Log.Debug($"SchedulerOption:= {Properties.Settings.Default.SchedulerOption}");
+            CommonFunctions.Log.Debug($"ReceiveNotifications:= {Properties.Settings.Default.ReceiveNotifications}");
+            CommonFunctions.Log.Debug($"EmailNotifications:= {Properties.Settings.Default.EmailNotifications}");
+            CommonFunctions.Log.Debug($"EmailAddress:= {Properties.Settings.Default.EmailAddress}");
+            CommonFunctions.Log.Debug($"TextNotifications:= {Properties.Settings.Default.TextNotifications}");
+            CommonFunctions.Log.Debug($"PhoneNumber:= {Properties.Settings.Default.PhoneNumber}");
+            CommonFunctions.Log.Debug($"CarrierAddress:= {Properties.Settings.Default.CarrierAddress}");
+            CommonFunctions.Log.Debug($"PopupNotifications:= {Properties.Settings.Default.PopupNotifications}");
         }
 
 
@@ -321,6 +375,7 @@ namespace Amazon_Price_Checker.Common
             this.NoResizingTabs = true;
             this.ResizeTabsToPrevious = false;
             this.ResizeTabsToDefault = false;
+            this.LogLevel = "ERROR";
             this.AccentColor = "#FF1E90FF";
 
             this.SchedulerEnabled = false;

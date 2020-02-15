@@ -11,6 +11,7 @@ namespace Amazon_Price_Checker.Common
         public static DataTable GetItemInformation(string connectionString)
         {
             string Command = "SELECT ItemID, Title, Url, AmazonPrice, DesiredPrice, CreateDate, LastModifiedDate, LastNotifiedDate FROM AmazonItems";
+            CommonFunctions.Log.Debug($"SELECT ItemID, Title, Url, AmazonPrice, DesiredPrice, CreateDate, LastModifiedDate, LastNotifiedDate FROM AmazonItems");
 
             DataTable dtResult = new DataTable();
 
@@ -37,6 +38,7 @@ namespace Amazon_Price_Checker.Common
         public static bool InsertItem(string connectionString, string title, string url, float price, float desiredPrice)
         {
             string commandText = $"INSERT INTO AmazonItems (Title, Url, AmazonPrice, DesiredPrice) VALUES ('{title}', '{url}', {price}, {desiredPrice});";
+            CommonFunctions.Log.Debug($"INSERT INTO AmazonItems(Title, Url, AmazonPrice, DesiredPrice) VALUES('{title}', '{url}', { price}, { desiredPrice})");
 
             try
             {
@@ -64,6 +66,7 @@ namespace Amazon_Price_Checker.Common
         public static void UpdateItem(string connectionString, int itemID, string title, float price, DateTime updateTime)
         {
             string commandText = $"UPDATE AmazonItems Set  Title = '{title}', AmazonPrice = {price}, LastModifiedDate = '{updateTime}' WHERE ItemID = {itemID};";
+            CommonFunctions.Log.Debug($"UPDATE AmazonItems Set  Title = '{title}', AmazonPrice = {price}, LastModifiedDate = '{updateTime}' WHERE ItemID = {itemID}");
 
             try
             {
@@ -89,6 +92,7 @@ namespace Amazon_Price_Checker.Common
         public static bool UpdateDesiredPrice(string connectionString, int itemID, float newPrice)
         {
             string commandText = $"UPDATE AmazonItems Set  DesiredPrice = {newPrice} WHERE ItemID = {itemID};";
+            CommonFunctions.Log.Debug($"UPDATE AmazonItems Set  DesiredPrice = {newPrice} WHERE ItemID = {itemID}");
 
             try
             {
@@ -116,6 +120,8 @@ namespace Amazon_Price_Checker.Common
         public static DataTable GetItemID(string connectionString, string product)
         {
             string Command = $"SELECT ItemID FROM AmazonItems WHERE Url like '%{product}%'";
+            CommonFunctions.Log.Debug($"SELECT ItemID FROM AmazonItems WHERE Url like '%{product}%'");
+
             DataTable dtResult = new DataTable();
             if (!string.IsNullOrEmpty(connectionString))
             {
@@ -141,6 +147,7 @@ namespace Amazon_Price_Checker.Common
         public static void DeleteItem(string connectionString, int itemID)
         {
             string commandText = $"DELETE FROM AmazonItems WHERE ItemID = {itemID};";
+            CommonFunctions.Log.Debug($"DELETE FROM AmazonItems WHERE ItemID = {itemID}");
 
             try
             {
@@ -166,6 +173,7 @@ namespace Amazon_Price_Checker.Common
         public static bool IsWatchingUrl(string connectionString, string product)
         {
             string Command = $"SELECT ItemID FROM AmazonItems WHERE Url like '%{product}%'";
+            CommonFunctions.Log.Debug($"SELECT ItemID FROM AmazonItems WHERE Url like '%{product}%'");
 
             DataTable dtResult = new DataTable();
 
