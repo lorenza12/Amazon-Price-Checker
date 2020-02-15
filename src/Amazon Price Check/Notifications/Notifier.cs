@@ -127,6 +127,7 @@ namespace Amazon_Price_Checker.Notifications
             try
             {
                 string emailAddress = CommonFunctions.UserSettings.EmailAddress;
+                CommonFunctions.Log.Debug($"Sending email notification to {emailAddress}");
 
                 //Create Message
                 MailMessage mail = new MailMessage();
@@ -166,7 +167,7 @@ namespace Amazon_Price_Checker.Notifications
         {
             try
             {
-
+                CommonFunctions.Log.Debug($"Sending text notification to {CommonFunctions.UserSettings.PhoneNumber + CommonFunctions.UserSettings.CarrierAddress}");
                 //Create Message
                 MailMessage mail = new MailMessage();
                 mail.Subject = "Amazon Price Check - Price Drop!";
@@ -209,6 +210,7 @@ namespace Amazon_Price_Checker.Notifications
 
                 if (!string.IsNullOrWhiteSpace(this.emailHtml))
                 {
+                    CommonFunctions.Log.Debug($"Opening popup notification window");
                     bool htmlUpdated = FillHtml();
 
                     if (htmlUpdated)
@@ -237,6 +239,7 @@ namespace Amazon_Price_Checker.Notifications
             try
             {
                 UserCredential credential;
+                CommonFunctions.Log.Debug($"Getting Google Credentials");
 
                 using (var stream =
                     new FileStream("GoogleApi.json", FileMode.Open, FileAccess.Read))

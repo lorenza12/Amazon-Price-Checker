@@ -174,6 +174,7 @@ namespace Amazon_Price_Checker
                             break;
                     }
 
+                    CommonFunctions.Log.Debug($"Rescheduling price checker for {intervalMilliseconds} ms");
                     rescheduleLog.Log();
                     UpdateScheduleTime(intervalMilliseconds);
                 }
@@ -234,6 +235,7 @@ namespace Amazon_Price_Checker
                 {
                     watch.Stop();
                     var elapsedSeconds = watch.ElapsedMilliseconds * 0.001;
+                    CommonFunctions.Log.Debug($"Checking amazon prices");
 
 
                     //Update the DB with new prices
@@ -247,6 +249,7 @@ namespace Amazon_Price_Checker
                                                                            $"Execution time: {elapsedSeconds}s"),
                                                                            DisplayLogItem.LogIcon.Success);
                     finishLog.Log();
+                    CommonFunctions.Log.Debug($"Finished checking prices:= {elapsedSeconds}s");
 
                     //Finally re-enable the start button after the thread has finished and update the watchlist grid since we know the price check is complete
                     Application.Current.Dispatcher.Invoke(new Action(() =>
@@ -322,6 +325,7 @@ namespace Amazon_Price_Checker
                     DateTime.TryParse(row["LastModifiedDate"].ToString(), out DateTime lastModifiedDate);
                     DateTime.TryParse(row["LastNotifiedDate"].ToString(), out DateTime lastNotifiedDate);
 
+                    CommonFunctions.Log.Debug($"Comparing price for {title}:= ${amazonPrice} vs ${desiredPrice}");
 
                     if (amazonPrice <= desiredPrice)
                     {

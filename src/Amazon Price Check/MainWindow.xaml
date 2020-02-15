@@ -217,12 +217,13 @@
                                         <RowDefinition Height="30"/>
                                         <RowDefinition Height="Auto"/>
                                         <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
                                     </Grid.RowDefinitions>
                                     <Grid.Resources>
                                         <BooleanToVisibilityConverter x:Key="toggleResizeControlsConverter"/>
                                     </Grid.Resources>
 
-                                    <Border Grid.RowSpan="9"  BorderThickness="1" CornerRadius="4" Padding="5"  BorderBrush="LightGray" Margin="10,-5,10,-5" />
+                                    <Border Grid.RowSpan="100"  BorderThickness="1" CornerRadius="4" Padding="5"  BorderBrush="LightGray" Margin="10,-5,10,-5" />
 
                                     <CheckBox x:Name="startOnStartup_chbx" Margin="20,10,0,0" FontSize="15" VerticalAlignment="Top"  
                                               VerticalContentAlignment="Center" Content="Start on startup" />
@@ -284,10 +285,33 @@
                                         </Grid>
                                     </GroupBox>
 
+                                    <Grid Grid.Row="8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="125"/>
+                                            <ColumnDefinition Width="250"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text=" Log Level:" Margin="25,10,0,0" FontSize="15" />
 
-                                    <TextBlock Text=" Accent Color:" Grid.Row="8" Margin="25,10,0,0" FontSize="15" />
+                                        <ComboBox x:Name="logLevel_cmbobox" SelectedIndex="2" FontSize="15" HorizontalContentAlignment="Left" 
+                                              VerticalContentAlignment="Center"  Grid.Column="1" Width="Auto" Height="25" VerticalAlignment="Center"
+                                              Margin="0,5,0,0">
+                                            <ComboBoxItem Content="OFF"/>
+                                            <ComboBoxItem Content="FATAL"/>
+                                            <ComboBoxItem Content="ERROR"/>
+                                            <ComboBoxItem Content="WARN"/>
+                                            <ComboBoxItem Content="INFO"/>
+                                            <ComboBoxItem Content="DEBUG"/>
+                                            <ComboBoxItem Content="ALL"/>
+                                        </ComboBox>
 
-                                    <xctk:ColorPicker Name="colorPicker" Grid.Row="8" Margin="125,10,0,0" Width="250" HorizontalAlignment="Left" ShowRecentColors="True"
+                                        <Button x:Name="openLog_btn" Grid.Column="2" Content="Open Log" Width="75" Height="25" HorizontalAlignment="Center"
+                                                Click="OpenLog_Click" Margin="15,5,50,0" />
+                                    </Grid>
+
+                                    <TextBlock Text=" Accent Color:" Grid.Row="9" Margin="25,10,0,0" FontSize="15" />
+
+                                    <xctk:ColorPicker Name="colorPicker" Grid.Row="9" Margin="125,10,0,0" Width="250" HorizontalAlignment="Left" ShowRecentColors="True"
                                                       SelectedColor="#FF1E90FF" ColorMode="ColorCanvas" AvailableColorsSortingMode="HueSaturationBrightness"
                                                       ShowStandardColors="False" UsingAlphaChannel="False"/>
 

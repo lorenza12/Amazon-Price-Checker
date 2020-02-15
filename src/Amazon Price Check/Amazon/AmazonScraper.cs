@@ -31,6 +31,7 @@ namespace Amazon_Price_Checker
                     //Amazon uses gzip encoding so have to decode it
                     //https://weblog.west-wind.com/posts/2007/jun/29/httpwebrequest-and-gzip-http-responses
                     //article on decoding gzip
+                    CommonFunctions.Log.Debug($"Requesting html for {this.Url}");
 
                     HttpWebRequest http = (HttpWebRequest)WebRequest.Create(Url);
                     http.Headers.Add(HttpRequestHeader.AcceptEncoding, "gzip,deflate");
@@ -72,7 +73,7 @@ namespace Amazon_Price_Checker
                     }
                     else
                     {
-                        CommonFunctions.Log.Error($"Unable to retrieve html for {this.Url}");
+                        CommonFunctions.Log.Warn($"No response html was given for {this.Url}");
                     }
 
                 }
@@ -98,6 +99,7 @@ namespace Amazon_Price_Checker
             try
             {
                 this.Title = htmlDoc.GetElementbyId("productTitle").InnerText.Trim();
+                CommonFunctions.Log.Debug($"Amazon title found:= {Title}");
             }
             catch (Exception titleException)
             {
@@ -136,11 +138,11 @@ namespace Amazon_Price_Checker
                 try
                 {
                     this.Price = htmlDoc.GetElementbyId(priceIdOptions[attempt]).InnerText.Trim();
+                    CommonFunctions.Log.Debug($"Amazon price found:= {Price}");
                 }
                 catch (NullReferenceException priceIdException)
                 {
-                    //Don't really need to log as it can be quite common these are null - Use for debugging purposes
-                    //CommonFunctions.log.Debug($"{priceIdOptions[attempt]} did not exist for item: {this.Title ?? this.Url}", priceIdException);
+                    CommonFunctions.Log.Info($"{priceIdOptions[attempt]} did not exist for item: {this.Title ?? this.Url}", priceIdException);
                 }
                 catch (Exception e)
                 {
@@ -165,10 +167,11 @@ namespace Amazon_Price_Checker
                 {
                     var priceClass = htmlDoc.DocumentNode.SelectNodes($"//div[contains(@class, '{priceClassOptions[classAttempt]}')]");
                     this.Price = priceClass[0].InnerText.Trim();
+                    CommonFunctions.Log.Debug($"Amazon price found:= {Price}");
                 }
                 catch (NullReferenceException priceClassException)
                 {
-                    CommonFunctions.Log.Error($"{priceClassOptions[classAttempt]} did not exist for item: {this.Title ?? this.Url}", priceClassException);
+                    CommonFunctions.Log.Info($"{priceClassOptions[classAttempt]} did not exist for item: {this.Title ?? this.Url}", priceClassException);
                 }
                 catch (Exception e)
                 {

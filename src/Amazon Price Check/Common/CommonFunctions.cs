@@ -1,4 +1,5 @@
-﻿using System;
+﻿using log4net;
+using System;
 using System.Configuration;
 using System.Windows;
 using System.Windows.Media;
@@ -13,7 +14,21 @@ namespace Amazon_Price_Checker.Common
 
         public static readonly string ItemsConnectionString = ConfigurationManager.ConnectionStrings["ItemsConnection"].ConnectionString;
 
-        
+
+        public static void UpdateLogLevel(string logLevel)
+        {
+            try
+            {
+                Log.Info($"Changing log level to '{logLevel}'");
+                ((log4net.Repository.Hierarchy.Hierarchy)LogManager.GetRepository()).Root.Level = Log.Logger.Repository.LevelMap[logLevel];
+                ((log4net.Repository.Hierarchy.Hierarchy)LogManager.GetRepository()).RaiseConfigurationChanged(EventArgs.Empty);
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"Error changing log level to '{logLevel}'", ex);
+            }
+        }
+
         public static float StringPriceToFloat(string price)
         {
             try
@@ -36,7 +51,11 @@ namespace Amazon_Price_Checker.Common
             {
                 s = System.Net.WebUtility.HtmlDecode(s.Replace("'", ""));
 
-                return s.Trim();
+                string strippedString = s.Trim();
+
+                Log.Debug($"Removing special characters from {s}:= {strippedString}");
+
+                return strippedString;
             }
             catch (Exception e)
             {
@@ -51,8 +70,10 @@ namespace Amazon_Price_Checker.Common
             {
                 if (url.Trim().Contains("ref"))
                 {
+                    string strippedAmazonUrl = url.Substring(0, url.IndexOf("ref")).Trim();
+                    Log.Debug($"Stripping amazon url {url}:= {strippedAmazonUrl}");
                     //return the bare amazon url 
-                    return url.Substring(0, url.IndexOf("ref")).Trim();
+                    return strippedAmazonUrl;
                 }
             }
             catch (Exception e)
@@ -83,8 +104,11 @@ namespace Amazon_Price_Checker.Common
 
                     var productLength = productEnd - productStart;
 
+                    var product = url.Substring(productStart, productLength).Trim();
+                    Log.Debug($"Amazon product from url: '{product}'");
+
                     //return the amazon product - the product is located like so - /dp/XXXXXX/
-                    return url.Substring(productStart, productLength).Trim();
+                    return product;
                 }
             }
             catch (Exception e)
@@ -97,18 +121,24 @@ namespace Amazon_Price_Checker.Common
 
         public static int DaysToMilliseconds(int days)
         {
-            return HoursToMilliseconds(days * 24);
+            int daysInMilliseconds = HoursToMilliseconds(days * 24);
+            Log.Debug($"Converting {days} days to milliseconds:= {daysInMilliseconds}");
+            return daysInMilliseconds;
         }
 
         public static int HoursToMilliseconds(int hours)
         {
+            int hoursInMilliseconds = hours * 3600000;
+            Log.Debug($"Converting {hours} hours to milliseconds:= {hoursInMilliseconds}");
             //1 hour = 60 minutes = 60 × 60 seconds = 3600 seconds = 3600 × 1000 milliseconds = 3,600,000 ms
-            return hours * 3600000;
+            return hoursInMilliseconds;
         }
 
         public static int MinutesToMilliseconds(int minutes)
         {
-            return minutes * 60000;
+            int minutesInMilliseconds = minutes * 60000;
+            Log.Debug($"Converting {minutes} minutes to milliseconds:= {minutesInMilliseconds}");
+            return minutesInMilliseconds;
         }
 
         public static void UpdatePriceWatchButton(bool isWatching)
