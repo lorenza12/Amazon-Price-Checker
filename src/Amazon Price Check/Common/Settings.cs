@@ -89,8 +89,6 @@ namespace Amazon_Price_Checker.Common
                 //Add or remove from registry if the startup checkbox changed
                 if (Properties.Settings.Default.StartOnStartup != startOnStartup)
                     ToggleStartupRegistry(startOnStartup);
-                if (Properties.Settings.Default.LogLevel != logLevel)
-                    UpdateLogLevel(logLevel);
 
                 Properties.Settings.Default.StartOnStartup = startOnStartup;
                 Properties.Settings.Default.StartInTray = startInTray;
@@ -293,6 +291,8 @@ namespace Amazon_Price_Checker.Common
             this.PhoneNumber = Properties.Settings.Default.PhoneNumber;
             this.CarrierAddress = Properties.Settings.Default.CarrierAddress;
             this.PopupNotifications = Properties.Settings.Default.PopupNotifications;
+
+            UpdateLogLevel(this.LogLevel); //Must set the log level on startup because by defualt it is set to ALL
 
         }
 
