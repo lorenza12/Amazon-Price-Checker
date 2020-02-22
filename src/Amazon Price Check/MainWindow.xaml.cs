@@ -648,7 +648,7 @@ namespace Amazon_Price_Checker
                 DateTime.TryParse(row["LastModifiedDate"].ToString(), out DateTime lastModifiedDate);
                 DateTime.TryParse(row["LastNotifiedDate"].ToString(), out DateTime lastNotifiedDate);
 
-                CommonFunctions.Log.Debug($"Adding item to watch list:= '{itemID}' '{title}' '{url}' '{amazonPrice}' '{desiredPrice}' '{createDate}' '{lastModifiedDate}' '{lastNotifiedDate}'");
+                CommonFunctions.Log.Debug($"Adding item to watch list:= '{itemID}', '{title}', '{url}', '{amazonPrice}', '{desiredPrice}', '{createDate}', '{lastModifiedDate}', '{lastNotifiedDate}'");
                 AmazonWatchItem item = new AmazonWatchItem(itemID, title, url, amazonPrice, desiredPrice, createDate, lastModifiedDate, lastNotifiedDate);
                 watchList.Add(item);
             }

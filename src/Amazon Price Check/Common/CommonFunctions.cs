@@ -19,7 +19,7 @@ namespace Amazon_Price_Checker.Common
         {
             try
             {
-                Log.Info($"Changing log level to '{logLevel}'");
+                Log.Info($"Setting log level to '{logLevel}'");
                 ((log4net.Repository.Hierarchy.Hierarchy)LogManager.GetRepository()).Root.Level = Log.Logger.Repository.LevelMap[logLevel];
                 ((log4net.Repository.Hierarchy.Hierarchy)LogManager.GetRepository()).RaiseConfigurationChanged(EventArgs.Empty);
             }
