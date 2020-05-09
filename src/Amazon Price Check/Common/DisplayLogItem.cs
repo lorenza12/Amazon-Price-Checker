@@ -11,7 +11,7 @@ namespace Amazon_Price_Checker.Common
         public BitmapImage LogImage { get; set; }
         public string LogText { get; set; }
 
-        public enum LogIcon { Start, Error, Success, Warning, Info, Notification, Buy, Item };
+        public enum LogIcon { Start, Error, Success, Warning, Info, Notification, Buy, Item, NoPriceItem };
 
 
         public DisplayLogItem(string logText, LogIcon logImage)
@@ -84,6 +84,9 @@ namespace Amazon_Price_Checker.Common
 
                 case LogIcon.Item:
                     return new BitmapImage(new Uri(@"pack://application:,,,/Images/LogIcons/Item.png"));
+
+                case LogIcon.NoPriceItem:
+                    return new BitmapImage(new Uri(@"pack://application:,,,/Images/LogIcons/Item - No Price.png"));
 
                 case LogIcon.Notification:
                     return new BitmapImage(new Uri(@"pack://application:,,,/Images/LogIcons/Notification.png"));

@@ -60,7 +60,7 @@ namespace Amazon_Price_Checker
                 AmazonWatchItem updatedItem = new AmazonWatchItem(itemId,
                                                                   !string.IsNullOrWhiteSpace(updatedTitle) ? updatedTitle : currentItemTitle,
                                                                   itemUrl,
-                                                                  updatedPrice > 0 ? updatedPrice : currentItemPrice,
+                                                                  updatedPrice,
                                                                   itemDesiredPrice,
                                                                   itemCreateDate,
                                                                   !string.IsNullOrWhiteSpace(updatedTitle) && updatedPrice > 0 ? DateTime.Now : itemLastModifiedDate,
@@ -85,7 +85,7 @@ namespace Amazon_Price_Checker
 
         public int MillisecondsUntilExecution { get; set; }
 
-        //the interval will be passed in on when the job should run - create a common function to turn the scheduled time difference to milliseconds
+        //the interval will be passed in on when the job should run
 
         public ScheduledPriceCheck()
         {
@@ -125,6 +125,7 @@ namespace Amazon_Price_Checker
             if (millisecondsUntilExecution > 0)
             {
                 executionTimer.Interval = millisecondsUntilExecution;
+                CommonFunctions.UserSettings.SetNextScheduledPriceCheck(DateTime.Now.AddMilliseconds(millisecondsUntilExecution));
             }
             else
             {
@@ -142,6 +143,7 @@ namespace Amazon_Price_Checker
                 {
                     List<AmazonWatchItem> itemList = Application.Current.Dispatcher.Invoke(() => ((MainWindow)Application.Current.MainWindow).GetWatchItems());
                     PriceChecker.CheckPrices(itemList);
+                    CommonFunctions.UserSettings.SetNextScheduledPriceCheck(DateTime.Now.AddMilliseconds(this.MillisecondsUntilExecution));
                 }
                 catch (Exception ex)
                 {
@@ -155,28 +157,25 @@ namespace Amazon_Price_Checker
                     DisplayLogItem rescheduleLog = new DisplayLogItem();
 
                     //Manually was checking prices when scheduler tried to kicked off. Reschedule the scheduler to the settings time
-                    int intervalMilliseconds = 0;
 
                     switch (CommonFunctions.UserSettings.SchedulerOption)
                     {
                         case (Settings.ScheduleType.Hours):
-                            intervalMilliseconds = CommonFunctions.HoursToMilliseconds(CommonFunctions.UserSettings.ScheduleTime);
                             rescheduleLog.LogText = DisplayLogItem.CreateLogText($"Price checker was already checking prices when the scheduler tried to begin.",
                                                                                  $"Rescheduling for: {CommonFunctions.UserSettings.ScheduleTime} hours");
                             rescheduleLog.LogImage = DisplayLogItem.GetLogIcon(DisplayLogItem.LogIcon.Warning);
                             break;
 
                         case (Settings.ScheduleType.Days):
-                            intervalMilliseconds = CommonFunctions.DaysToMilliseconds(CommonFunctions.UserSettings.ScheduleTime);
                             rescheduleLog.LogText = DisplayLogItem.CreateLogText($"Price checker was already checking prices when the scheduler tried to begin",
                                                                                  $"Rescheduling for: {CommonFunctions.UserSettings.ScheduleTime} days");
                             rescheduleLog.LogImage = DisplayLogItem.GetLogIcon(DisplayLogItem.LogIcon.Warning);
                             break;
                     }
 
-                    CommonFunctions.Log.Debug($"Rescheduling price checker for {intervalMilliseconds} ms");
+                    CommonFunctions.Log.Debug($"Rescheduling price checker for {this.MillisecondsUntilExecution} ms");
                     rescheduleLog.Log();
-                    UpdateScheduleTime(intervalMilliseconds);
+                    UpdateScheduleTime(this.MillisecondsUntilExecution);
                 }
                 catch (Exception rescheduleEx)
                 {
@@ -327,7 +326,7 @@ namespace Amazon_Price_Checker
 
                     CommonFunctions.Log.Debug($"Comparing price for {title}:= ${amazonPrice} vs ${desiredPrice}");
 
-                    if (amazonPrice <= desiredPrice)
+                    if (amazonPrice <= desiredPrice && amazonPrice > 0)
                     {
                         if (!CommonFunctions.UserSettings.LimitNotifications)
                         {
@@ -355,10 +354,10 @@ namespace Amazon_Price_Checker
                     else
                     {
                         priceLog.LogText = DisplayLogItem.CreateLogText($"{CommonFunctions.RemoveSQLCharacters(title)}",
-                                                                        $"Current Price: ${amazonPrice}",
+                                                                        amazonPrice > 0 ? $"Current Price: ${amazonPrice}" : $"Current Price: Unable to find",
                                                                         $"Desired Price: ${desiredPrice}");
 
-                        priceLog.LogImage = DisplayLogItem.GetLogIcon(DisplayLogItem.LogIcon.Item);
+                        priceLog.LogImage = amazonPrice > 0 ? DisplayLogItem.GetLogIcon(DisplayLogItem.LogIcon.Item) : DisplayLogItem.GetLogIcon(DisplayLogItem.LogIcon.NoPriceItem);
                         priceLog.Log();
                     }
                 }
@@ -375,6 +374,14 @@ namespace Amazon_Price_Checker
 
             if (notificationList.Count > 0)
             {
+                if (CommonFunctions.UserSettings.EmailNotifications || CommonFunctions.UserSettings.TextNotifications)
+                {
+                    DisplayLogItem notifyLog = new DisplayLogItem();
+                    notifyLog.LogText = DisplayLogItem.CreateLogText("Notifications", $"Sending alert for {notificationList.Count} " + (notificationList.Count > 1 ? "items" : "item"));
+                    notifyLog.LogImage = DisplayLogItem.GetLogIcon(DisplayLogItem.LogIcon.Notification);
+                    notifyLog.Log();
+                }
+
                 Notifier notifier = new Notifier(notificationList);
                 notifier.Notify();
             }
