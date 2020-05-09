@@ -33,16 +33,18 @@ namespace Amazon_Price_Checker.Common
         {
             try
             {
-                price = price.Trim().Replace("$", "").Replace(",", "");
-                float.TryParse(price, out float priceF);
-                return priceF;
+                if (!string.IsNullOrEmpty(price))
+                {
+                    price = price.Trim().Replace("$", "").Replace(",", "");
+                    float.TryParse(price, out float priceF);
+                    return priceF;
+                }
             }
             catch (Exception e)
             {
-                Log.Error("Unable to convert price to float", e);
-                return -1;
+                Log.Error($"Unable to convert '{price}' to float", e);
             }
-
+            return -1;
         }
 
         public static string RemoveSQLCharacters(string s)

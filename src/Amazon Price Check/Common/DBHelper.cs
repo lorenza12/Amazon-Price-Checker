@@ -117,6 +117,34 @@ namespace Amazon_Price_Checker.Common
             return true;
         }
 
+        public static bool UpdateLastNotifiedDate(string connectionString, int itemID, DateTime notifiedDate)
+        {
+            string commandText = $"UPDATE AmazonItems Set LastNotifiedDate = '{notifiedDate}' WHERE ItemID = {itemID};";
+            CommonFunctions.Log.Debug($"UPDATE AmazonItems Set LastNotifiedDate = '{notifiedDate}' WHERE ItemID = {itemID}");
+
+            try
+            {
+                if (!string.IsNullOrEmpty(connectionString))
+                {
+                    using (SqlConnection connection = new SqlConnection(connectionString))
+                    {
+                        using (SqlCommand cmd = new SqlCommand(commandText, connection))
+                        {
+                            connection.Open();
+                            cmd.ExecuteNonQuery();
+                            connection.Close();
+                        }
+                    }
+                }
+            }
+            catch (Exception updateLastNotifiedDate)
+            {
+                CommonFunctions.Log.Error($"Error updating lastModifiedDate for itemID: {itemID}", updateLastNotifiedDate);
+                return false;
+            }
+            return true;
+        }
+
         public static DataTable GetItemID(string connectionString, string product)
         {
             string Command = $"SELECT ItemID FROM AmazonItems WHERE Url like '%{product}%'";

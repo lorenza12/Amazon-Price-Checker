@@ -118,6 +118,9 @@ namespace Amazon_Price_Checker.Notifications
                 {
                     OpenPopup();
                 }
+
+                //Finally, change the last notified date
+                UpdateLastNotifiedDate();
             }
 
         }
@@ -239,7 +242,7 @@ namespace Amazon_Price_Checker.Notifications
             try
             {
                 UserCredential credential;
-                CommonFunctions.Log.Debug($"Getting Google Credentials");
+                CommonFunctions.Log.Debug("Getting Google Credentials");
 
                 using (var stream =
                     new FileStream("GoogleApi.json", FileMode.Open, FileAccess.Read))
@@ -255,19 +258,40 @@ namespace Amazon_Price_Checker.Notifications
                         new FileDataStore(credPath, true)).Result;
                 }
 
-                // Create Gmail API service.
-                var service = new GmailService(new BaseClientService.Initializer()
+                if (!string.IsNullOrEmpty(credential.Token.AccessToken) && !string.IsNullOrEmpty(credential.Token.RefreshToken))
                 {
-                    HttpClientInitializer = credential,
-                    ApplicationName = ApplicationName,
-                });
+                    CommonFunctions.Log.Debug("Refresh and Access token successfully retrieved.");
+                    CommonFunctions.Log.Info("Access token expires " + credential.Token.IssuedUtc.AddSeconds(credential.Token.ExpiresInSeconds.Value).ToLocalTime().ToString());
+                }
+
+
+                if (credential.Token.IsExpired(Google.Apis.Util.SystemClock.Default))
+                {
+                    CommonFunctions.Log.Debug("Access token needs refreshing.");
+                    var refreshResult = credential.RefreshTokenAsync(CancellationToken.None).Result;
+                }
 
                 return credential;
 
             }
+            catch (Google.Apis.Auth.OAuth2.Responses.TokenResponseException ex)
+            {
+                if (ex.Error.Error == "access_denied")
+                {
+                    string denied = "Text and email notifications will not work if you don't allow it access to your Gmail.";
+
+                    InfoWindow noAccessWindow = new InfoWindow("Gmail Access Denied", denied);
+
+                    CommonFunctions.Log.Warn("User did not provide authorisation code. Notifications will not be able to work.");
+                }
+                else
+                {
+                    CommonFunctions.Log.Error("Unable to authenticate with Google. The following error occurred:", ex);
+                }
+            }
             catch (Exception e)
             {
-                CommonFunctions.Log.Error("Error Getting Gmail Credentials", e);
+                CommonFunctions.Log.Error($"Error Getting Gmail Credentials: {e.Message}", e);
             }
 
             return null;
@@ -286,8 +310,10 @@ namespace Amazon_Price_Checker.Notifications
         {
             try
             {
+                var baseDir = System.AppDomain.CurrentDomain.BaseDirectory;
+                var notificationsDir = @"Notifications\EmailHtml.html";
 
-                var htmlFile = Path.Combine(Directory.GetCurrentDirectory(), "Notifications\\EmailHtml.html");
+                var htmlFile = Path.Combine(baseDir, notificationsDir);
 
                 using (var reader = new StreamReader(htmlFile))
                 {
@@ -399,6 +425,30 @@ namespace Amazon_Price_Checker.Notifications
                 CommonFunctions.Log.Error("Error purging token.json credentials", ex);
             }
 
+        }
+
+        private void UpdateLastNotifiedDate()
+        {
+            try
+            {
+                CommonFunctions.Log.Debug($"Updating last notified dates for items");
+
+                foreach (AmazonWatchItem item in notifyItemsList)
+                {
+                    try
+                    {
+                        DBHelper.UpdateLastNotifiedDate(CommonFunctions.ItemsConnectionString, item.Id, DateTime.Now);
+                    }
+                    catch (Exception updateEx)
+                    {
+                        CommonFunctions.Log.Error($"Error upating last notified date for {item.Title}", updateEx);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                CommonFunctions.Log.Error("Error upating last notified date for items", ex);
+            }
         }
 
     }

@@ -551,7 +551,7 @@
                     </Grid.RowDefinitions>
 
                     <DataGrid x:Name="watchListItems_datagrid" SelectionMode="Single" Grid.Row="0" RowHeight="30" MinHeight="30" 
-                              AutoGenerateColumns="False" IsReadOnly="True" Margin="10,10,10,10" ColumnHeaderHeight="33" >
+                              AutoGenerateColumns="False" IsReadOnly="True" Margin="10,10,10,10" ColumnHeaderHeight="33" ContextMenuOpening="watchListItemsDatagrid_CntxMnuOpening">
                         <DataGrid.Resources>
                             <Style TargetType="{x:Type DataGridColumnHeader}">
                                 <Setter Property="Foreground" Value="{StaticResource AccentColor}"/>
@@ -572,6 +572,14 @@
                             <DataGridTextColumn Header="Last Price Check" Binding="{Binding LastModifiedDate}" Width="150" />
                             <DataGridTextColumn Header="Last Notified Date" Binding="{Binding LastNotifiedDate}" MaxWidth="0" Visibility="Hidden"/>
                         </DataGrid.Columns>
+                        <DataGrid.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem x:Name="openInBrowser_mnuItem" Header="Open in browser" Click="OpenInBrowserCntxMnu_Click" IsEnabled="False"/>
+                                <Separator />
+                                <MenuItem x:Name="editItem_mnuItem" Header="Edit" Click="EditItemCntxMnu_Click"/>
+                                <MenuItem x:Name="deleteItem_mnuItem" Header="Delete" Click="DeleteItemCntxMnu_Click"/>
+                            </ContextMenu>
+                        </DataGrid.ContextMenu>
                     </DataGrid>
 
                     <Grid Grid.Row="1" >

@@ -138,7 +138,6 @@ namespace Amazon_Price_Checker
 
                 //Update the next scheduled runtime settings
                 CommonFunctions.UserSettings.SetNextScheduledPriceCheck(GetSchedulerNextRunTime());
-                CommonFunctions.Log.Debug($"Auto price checking in {intervalMilliseconds} ms");
 
             }
             catch (Exception e)
@@ -179,11 +178,11 @@ namespace Amazon_Price_Checker
                             break;
                     }
 
+                    scheduler.MillisecondsUntilExecution = intervalMilliseconds;
                     scheduler.UpdateScheduleTime(intervalMilliseconds);
 
                     //Update the next scheduled runtime settings
                     CommonFunctions.UserSettings.SetNextScheduledPriceCheck(GetSchedulerNextRunTime());
-                    CommonFunctions.Log.Debug($"Scheduler changed to {intervalMilliseconds} ms");
                 }
             }
             catch (Exception e)
@@ -694,6 +693,7 @@ namespace Amazon_Price_Checker
         }
 
 
+
         private void AmazonItemDelete_Click(object sender, RoutedEventArgs e)
         {
             try
@@ -707,6 +707,58 @@ namespace Amazon_Price_Checker
             catch (Exception ex)
             {
                 CommonFunctions.Log.Error("Error deleting item", ex);
+            }
+        }
+
+        private void EditItemCntxMnu_Click(object sender, RoutedEventArgs e)
+        {
+            AmazonItemEdit_Click(sender, e);
+        }
+
+        private void DeleteItemCntxMnu_Click(object sender, RoutedEventArgs e)
+        {
+            AmazonItemDelete_Click(sender, e);
+        }
+
+        private void OpenInBrowserCntxMnu_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var selectedItem = (AmazonWatchItem)watchListItems_datagrid.SelectedItem;
+                string url = selectedItem.Url;
+
+                urlAddress_txtbox.Text = url;
+                browser_tab.IsSelected = true;
+
+                Browser.Address = url;
+            }
+            catch (Exception ex)
+            {
+                CommonFunctions.Log.Error("Error opening watch list item in browser", ex);
+            }
+        }
+
+
+        private void watchListItemsDatagrid_CntxMnuOpening(object sender, ContextMenuEventArgs e)
+        {
+            try
+            {
+                if (watchListItems_datagrid.SelectedIndex < 0)
+                {
+                    openInBrowser_mnuItem.IsEnabled = false;
+                    deleteItem_mnuItem.IsEnabled = false;
+                    editItem_mnuItem.IsEnabled = false;
+                }
+                else
+                {
+                    openInBrowser_mnuItem.IsEnabled = true;
+                    deleteItem_mnuItem.IsEnabled = true;
+                    editItem_mnuItem.IsEnabled = true;
+                }
+            }
+            catch (Exception ex)
+            {
+                CommonFunctions.Log.Error("Error enabling/disabling watch list context menu items", ex);
             }
         }
 
