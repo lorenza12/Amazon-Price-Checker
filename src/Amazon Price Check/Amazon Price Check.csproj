@@ -240,7 +240,7 @@
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
     <None Include="GoogleApi.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Include="log4net.config">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
@@ -287,6 +287,7 @@
     <Resource Include="Images\AppIcons\Logo.png" />
     <Resource Include="Images\AppIcons\Logo.ico" />
     <Resource Include="Logo.ico" />
+    <Resource Include="Images\LogIcons\Item - No Price.png" />
     <Content Include="Notifications\EmailHtml.html">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
